@@ -5,7 +5,7 @@ import json
 import os
 if __name__ == '__main__':
     os.sys.path.append('./src')
-from src.model.model import MMGNet
+from src.model.model_sgpn import MMGNet
 from src.utils.config import Config
 from utils import util
 import torch
