@@ -11,10 +11,11 @@ from torch.utils.tensorboard import SummaryWriter
 from src.dataset.DataLoader import (CustomDataLoader, collate_fn_mmg)
 from src.dataset.dataset_builder import build_dataset
 from src.model.SGFN_MMG.model import Mmgnet
-from src.model.SGFN_MMG.baseline_sgfn import SGFN
+from src.model.SGFN_MMG.model_finetune import MmgnetFinetune
+from src.model.SGFN_MMG.model_sgfn_finetune import SGFN
 from src.utils import op_utils
 from src.utils.eva_utils_acc import get_mean_recall, get_zero_shot_recall
-
+import wandb
 
 class MMGNet():
     def __init__(self, config):
@@ -53,15 +54,17 @@ class MMGNet():
         self.max_iteration_scheduler = self.config.max_iteration_scheduler = int(float(100)*len(self.dataset_train) // self.config.Batch_Size)
         
         ''' Build Model '''
-        self.model = SGFN(self.config, num_obj_class, num_rel_class).to(config.DEVICE) # Mmgnet
+        self.model = SGFN(self.config, num_obj_class, num_rel_class).to(config.DEVICE) # Mmgnet # MmgnetFinetune
         self.samples_path = os.path.join(config.PATH, self.model_name, self.exp,  'samples')
         self.results_path = os.path.join(config.PATH, self.model_name, self.exp, 'results')
         self.trace_path = os.path.join(config.PATH, self.model_name, self.exp, 'traced')
         self.writter = None
         
-        if not self.config.EVAL:
-            pth_log = os.path.join(config.PATH, "logs", self.model_name, self.exp)
-            self.writter = SummaryWriter(pth_log)
+        wandb.init(project="BetterFeat_adaptor", name=self.exp)
+        self.wandb_log = {}
+        # if not self.config.EVAL:
+        pth_log = os.path.join(config.PATH, "logs", self.model_name, self.exp)
+        self.writter = SummaryWriter(pth_log)
         
     def load(self, best=False):
         return self.model.load(best)
@@ -81,7 +84,14 @@ class MMGNet():
         obj_points, obj_2d_feats, gt_class, gt_rel_cls, edge_indices, descriptor, batch_ids = \
             self.cuda(obj_points, obj_2d_feats, gt_class, gt_rel_cls, edge_indices, descriptor, batch_ids)
         return obj_points, obj_2d_feats, gt_class, gt_rel_cls, edge_indices, descriptor, batch_ids
-          
+        
+    def write_wandb(self, logs):
+        wandb_log = {}
+        for log in logs:
+            name, value = log
+            wandb_log[name] = value
+        return wandb_log
+    
     def train(self):
         ''' create data loader '''
         drop_last = True
@@ -130,6 +140,7 @@ class MMGNet():
                                                 weights_obj=self.dataset_train.w_cls_obj, 
                                                 weights_rel=self.dataset_train.w_cls_rel,
                                                 ignore_none_rel = False)
+                wandb_log = self.write_wandb(logs)
                 
                 iteration = self.model.iteration
                 logs += [
@@ -142,6 +153,7 @@ class MMGNet():
                             if self.config.VERBOSE else [x for x in logs if not x[0].startswith('Loss')])
                 if self.config.LOG_INTERVAL and iteration % self.config.LOG_INTERVAL == 0:
                     self.log(logs, iteration)
+                    wandb.log(wandb_log)
                 if self.model.iteration >= self.max_iteration:
                     break
 
@@ -171,7 +183,7 @@ class MMGNet():
     
     def log(self, logs, iteration):
         # Tensorboard
-        if self.writter is not None and not self.config.EVAL:
+        if self.writter is not None:
             for i in logs:
                 if not i[0].startswith('Misc'):
                     self.writter.add_scalar(i[0], i[1], iteration)
@@ -325,39 +337,42 @@ class MMGNet():
         if self.model.config.EVAL:
             f_in.close()
         
-        logs = [("Acc@1/obj_cls_acc", obj_acc_1),
-                ("Acc@1/obj_2d_cls_acc", obj_acc_2d_1),
-                ("Acc@5/obj_cls_acc", obj_acc_5),
-                ("Acc@5/obj_2d_cls_acc", obj_acc_2d_5),
-                ("Acc@10/obj_cls_acc", obj_acc_10),
-                ("Acc@10/obj_2d_cls_acc", obj_acc_2d_10),
-                ("Acc@1/rel_cls_acc", rel_acc_1),
-                ("Acc@1/rel_cls_acc_mean", rel_acc_mean_1),
-                ("Acc@1/rel_2d_cls_acc", rel_acc_2d_1),
-                ("Acc@1/rel_2d_cls_acc_mean", rel_acc_2d_mean_1),
-                ("Acc@3/rel_cls_acc", rel_acc_3),
-                ("Acc@3/rel_cls_acc_mean", rel_acc_mean_3),
-                ("Acc@3/rel_2d_cls_acc", rel_acc_2d_3),
-                ("Acc@3/rel_2d_cls_acc_mean", rel_acc_2d_mean_3),
-                ("Acc@5/rel_cls_acc", rel_acc_5),
-                ("Acc@5/rel_cls_acc_mean", rel_acc_mean_5),
-                ("Acc@5/rel_2d_cls_acc", rel_acc_2d_5),
-                ("Acc@5/rel_2d_cls_acc_mean", rel_acc_2d_mean_5),
-                ("Acc@50/triplet_acc", triplet_acc_50),
-                ("Acc@50/triplet_2d_acc", triplet_acc_2d_50),
-                ("Acc@100/triplet_acc", triplet_acc_100),
-                ("Acc@100/triplet_2d_acc", triplet_acc_2d_100),
-                ("mean_recall@50", mean_recall[0]),
-                ("mean_2d_recall@50", mean_recall_2d[0]),
-                ("mean_recall@100", mean_recall[1]),
-                ("mean_2d_recall@100", mean_recall_2d[1]),
-                ("zero_shot_recall@50", zero_shot_recall[0]),
-                ("zero_shot_recall@100", zero_shot_recall[1]),
-                ("non_zero_shot_recall@50", non_zero_shot_recall[0]),
-                ("non_zero_shot_recall@100", non_zero_shot_recall[1]),
-                ("all_zero_shot_recall@50", all_zero_shot_recall[0]),
-                ("all_zero_shot_recall@100", all_zero_shot_recall[1])
+        logs = [("validation/Acc@1/obj_cls_acc", obj_acc_1),
+                ("validation/Acc@1/obj_2d_cls_acc", obj_acc_2d_1),
+                ("validation/Acc@5/obj_cls_acc", obj_acc_5),
+                ("validation/Acc@5/obj_2d_cls_acc", obj_acc_2d_5),
+                ("validation/Acc@10/obj_cls_acc", obj_acc_10),
+                ("validation/Acc@10/obj_2d_cls_acc", obj_acc_2d_10),
+                ("validation/Acc@1/rel_cls_acc", rel_acc_1),
+                ("validation/Acc@1/rel_cls_acc_mean", rel_acc_mean_1),
+                ("validation/Acc@1/rel_2d_cls_acc", rel_acc_2d_1),
+                ("validation/Acc@1/rel_2d_cls_acc_mean", rel_acc_2d_mean_1),
+                ("validation/Acc@3/rel_cls_acc", rel_acc_3),
+                ("validation/Acc@3/rel_cls_acc_mean", rel_acc_mean_3),
+                ("validation/Acc@3/rel_2d_cls_acc", rel_acc_2d_3),
+                ("validation/Acc@3/rel_2d_cls_acc_mean", rel_acc_2d_mean_3),
+                ("validation/Acc@5/rel_cls_acc", rel_acc_5),
+                ("validation/Acc@5/rel_cls_acc_mean", rel_acc_mean_5),
+                ("validation/Acc@5/rel_2d_cls_acc", rel_acc_2d_5),
+                ("validation/Acc@5/rel_2d_cls_acc_mean", rel_acc_2d_mean_5),
+                ("validation/Acc@50/triplet_acc", triplet_acc_50),
+                ("validation/Acc@50/triplet_2d_acc", triplet_acc_2d_50),
+                ("validation/Acc@100/triplet_acc", triplet_acc_100),
+                ("validation/Acc@100/triplet_2d_acc", triplet_acc_2d_100),
+                ("validation/mean_recall@50", mean_recall[0]),
+                ("validation/mean_2d_recall@50", mean_recall_2d[0]),
+                ("validation/mean_recall@100", mean_recall[1]),
+                ("validation/mean_2d_recall@100", mean_recall_2d[1]),
+                ("validation/zero_shot_recall@50", zero_shot_recall[0]),
+                ("validation/zero_shot_recall@100", zero_shot_recall[1]),
+                ("validation/non_zero_shot_recall@50", non_zero_shot_recall[0]),
+                ("validation/non_zero_shot_recall@100", non_zero_shot_recall[1]),
+                ("validation/all_zero_shot_recall@50", all_zero_shot_recall[0]),
+                ("validation/all_zero_shot_recall@100", all_zero_shot_recall[1])
                 ]
+        
+        wandb_log = self.write_wandb(logs)
+        wandb.log(wandb_log)
         
         self.log(logs, self.model.iteration)
         return mean_recall[0]
