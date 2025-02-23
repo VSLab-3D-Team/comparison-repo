@@ -1,5 +1,6 @@
 ROOT_PATH = '/media/michael/ssd1/SceneGraph/3DSSG/3RScan'
 DATA_PATH = '/media/michael/ssd1/SceneGraph/3DSSG/3RScan/data/3RScan/'
+SSG_DATA_PATH = '/media/michael/ssd1/SceneGraph/3DSSG/3DSSG_subset'
 # SCANNET_DATA_PATH = '/path/to/scannet' 
 # SCANNET_SPLIT_TRAIN = '/path/to/scannet/Tasks/Benchmarkscannetv2_train.txt'
 # SCANNET_SPLIT_VAL = '/path/to/scannet/Tasks/Benchmark/scannetv2_val.txt'

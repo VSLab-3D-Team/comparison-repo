@@ -1,3 +1,4 @@
+from utils.define import *
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -252,12 +253,12 @@ def read_json(split):
     """
     selected_scans = set()
     if split == 'train' :
-        selected_scans = selected_scans.union(read_txt_to_list('/media/michael/ssd1/SceneGraph/3DSSG/3DSSG_subset/train_scans.txt'))
-        with open("/media/michael/ssd1/SceneGraph/3DSSG/3DSSG_subset/relationships_train.json", "r") as read_file:
+        selected_scans = selected_scans.union(read_txt_to_list(f'{SSG_DATA_PATH}/train_scans.txt'))
+        with open(f"{SSG_DATA_PATH}/relationships_train.json", "r") as read_file:
             data = json.load(read_file)
     elif split == 'val':
-        selected_scans = selected_scans.union(read_txt_to_list('/media/michael/ssd1/SceneGraph/3DSSG/3DSSG_subset/validation_scans.txt'))
-        with open("/media/michael/ssd1/SceneGraph/3DSSG/3DSSG_subset/relationships_validation.json", "r") as read_file:
+        selected_scans = selected_scans.union(read_txt_to_list(f'{SSG_DATA_PATH}/validation_scans.txt'))
+        with open(f"{SSG_DATA_PATH}/relationships_validation.json", "r") as read_file:
             data = json.load(read_file)
     else:
         raise RuntimeError('unknown split type:',split)
