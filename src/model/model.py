@@ -54,7 +54,7 @@ class MMGNet():
         self.max_iteration_scheduler = self.config.max_iteration_scheduler = int(float(100)*len(self.dataset_train) // self.config.Batch_Size)
         
         ''' Build Model '''
-        self.model = SGFN(self.config, num_obj_class, num_rel_class).to(config.DEVICE) # Mmgnet # MmgnetFinetune
+        self.model = MmgnetFinetune(self.config, num_obj_class, num_rel_class).to(config.DEVICE) # Mmgnet # MmgnetFinetune
         self.samples_path = os.path.join(config.PATH, self.model_name, self.exp,  'samples')
         self.results_path = os.path.join(config.PATH, self.model_name, self.exp, 'results')
         self.trace_path = os.path.join(config.PATH, self.model_name, self.exp, 'traced')
