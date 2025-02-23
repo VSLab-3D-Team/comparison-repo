@@ -11,8 +11,9 @@ from torch.utils.tensorboard import SummaryWriter
 from src.dataset.DataLoader import (CustomDataLoader, collate_fn_mmg)
 from src.dataset.dataset_builder import build_dataset
 from src.model.SGFN_MMG.model import Mmgnet
+from src.model.SGFN_MMG.baseline_sgfn import SGFN
 from src.utils import op_utils
-from src.utils.eva_utils_acc import get_mean_recall
+from src.utils.eva_utils_acc import get_mean_recall, get_zero_shot_recall
 
 
 class MMGNet():
@@ -26,21 +27,21 @@ class MMGNet():
         
         ''' Build dataset '''
         dataset = None
-        if config.MODE  == 'train':
-            if config.VERBOSE: print('build train dataset')
-            self.dataset_train = build_dataset(self.config,split_type='train_scans', shuffle_objs=True,
-                                               multi_rel_outputs=mconfig.multi_rel_outputs,
-                                               use_rgb=mconfig.USE_RGB,
-                                               use_normal=mconfig.USE_NORMAL)
-            self.dataset_train.__getitem__(0)
+        #if config.MODE  == 'train':
+        if config.VERBOSE: print('build train dataset')
+        self.dataset_train = build_dataset(self.config,split_type='train_scans', shuffle_objs=True,
+                                            multi_rel_outputs=mconfig.multi_rel_outputs,
+                                            use_rgb=mconfig.USE_RGB,
+                                            use_normal=mconfig.USE_NORMAL)
+        self.dataset_train.__getitem__(0)
                 
-        if config.MODE  == 'train' or config.MODE  == 'trace':
-            if config.VERBOSE: print('build valid dataset')
-            self.dataset_valid = build_dataset(self.config,split_type='validation_scans', shuffle_objs=False, 
-                                      multi_rel_outputs=mconfig.multi_rel_outputs,
-                                      use_rgb=mconfig.USE_RGB,
-                                      use_normal=mconfig.USE_NORMAL)
-            dataset = self.dataset_valid
+        # if config.MODE  == 'eval' or config.MODE  == 'trace':
+        if config.VERBOSE: print('build valid dataset')
+        self.dataset_valid = build_dataset(self.config,split_type='validation_scans', shuffle_objs=False, 
+                                    multi_rel_outputs=mconfig.multi_rel_outputs,
+                                    use_rgb=mconfig.USE_RGB,
+                                    use_normal=mconfig.USE_NORMAL)
+        dataset = self.dataset_valid
 
         num_obj_class = len(self.dataset_valid.classNames)   
         num_rel_class = len(self.dataset_valid.relationNames)
@@ -52,7 +53,7 @@ class MMGNet():
         self.max_iteration_scheduler = self.config.max_iteration_scheduler = int(float(100)*len(self.dataset_train) // self.config.Batch_Size)
         
         ''' Build Model '''
-        self.model = Mmgnet(self.config, num_obj_class, num_rel_class).to(config.DEVICE)
+        self.model = SGFN(self.config, num_obj_class, num_rel_class).to(config.DEVICE) # Mmgnet
         self.samples_path = os.path.join(config.PATH, self.model_name, self.exp,  'samples')
         self.results_path = os.path.join(config.PATH, self.model_name, self.exp, 'results')
         self.trace_path = os.path.join(config.PATH, self.model_name, self.exp, 'traced')
