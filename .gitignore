@@ -7,4 +7,5 @@ output/
 config/ckp/*
 config/config/*
 config/logs/*
+config/results/
 model_checkpoints/

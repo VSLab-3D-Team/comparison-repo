@@ -105,7 +105,7 @@ class MMGNet():
             collate_fn=collate_fn_mmg,
         )
         
-        self.model.epoch = 1
+        self.model.epoch = 0
         keep_training = True
         
         if self.total == 1:
