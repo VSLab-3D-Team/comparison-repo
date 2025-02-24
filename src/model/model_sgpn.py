@@ -218,7 +218,7 @@ class MMGNet():
             
             with torch.no_grad():
                 # if self.model.config.EVAL:
-                top_k_obj, top_k_rel, tok_k_triplet, cls_matrix, sub_scores, obj_scores, rel_scores \
+                top_k_obj, top_k_rel, top_k_triplet, cls_matrix, sub_scores, obj_scores, rel_scores  \
                     = self.model.process_val(obj_points, gt_class, descriptor, gt_rel_cls, edge_indices, use_triplet=True)
                 # else:
                 #top_k_obj, top_k_obj_2d, top_k_rel, top_k_rel_2d, tok_k_triplet, top_k_2d_triplet, cls_matrix, sub_scores, obj_scores, rel_scores \
@@ -229,7 +229,7 @@ class MMGNet():
             #topk_obj_2d_list = np.concatenate((topk_obj_2d_list, top_k_obj_2d))
             topk_rel_list = np.concatenate((topk_rel_list, top_k_rel))
             #topk_rel_2d_list = np.concatenate((topk_rel_2d_list, top_k_rel_2d))
-            topk_triplet_list = np.concatenate((topk_triplet_list, tok_k_triplet))
+            topk_triplet_list = np.concatenate((topk_triplet_list, top_k_triplet))
             #topk_triplet_2d_list = np.concatenate((topk_triplet_2d_list, top_k_2d_triplet))
             if cls_matrix is not None:
                 cls_matrix_list.extend(cls_matrix)

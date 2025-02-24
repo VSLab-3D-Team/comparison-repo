@@ -164,7 +164,8 @@ class SGPN(BaseModel):
             obj_scores = None
             rel_scores = None
 
-        return top_k_obj, top_k_obj, top_k_rel, top_k_rel, top_k_triplet, top_k_triplet, cls_matrix, sub_scores, obj_scores, rel_scores 
+        return top_k_obj, top_k_rel, top_k_triplet, cls_matrix, sub_scores, obj_scores, rel_scores 
+    
     def backward(self, loss):
         loss.backward()
         self.optimizer.step()
