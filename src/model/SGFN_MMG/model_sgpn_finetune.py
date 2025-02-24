@@ -92,7 +92,7 @@ class SGPN(BaseModel):
         self.optimizer.zero_grad()
 
 
-    def forward(self, obj_points, obj_2d_feats, edge_indices, descriptor=None, batch_ids=None, istrain=False):
+    def forward(self, obj_points, edge_indices, descriptor=None, batch_ids=None, istrain=False):
         
         with torch.no_grad():
             _obj_feats, _edge_feats = self.frontend_3d(obj_points, edge_indices, descriptor, is_train=False)
@@ -107,10 +107,10 @@ class SGPN(BaseModel):
 
         return obj_logits, rel_cls
 
-    def process_train(self, obj_points, obj_2d_feats, gt_cls, descriptor, gt_rel_cls, edge_indices, batch_ids=None, with_log=False, ignore_none_rel=False, weights_obj=None, weights_rel=None):
+    def process_train(self, obj_points, gt_cls, descriptor, gt_rel_cls, edge_indices, batch_ids=None, with_log=False, ignore_none_rel=False, weights_obj=None, weights_rel=None):
         self.iteration +=1    
         
-        obj_pred, rel_pred = self(obj_points, obj_2d_feats, edge_indices.t().contiguous(),descriptor, batch_ids, istrain=True)
+        obj_pred, rel_pred = self(obj_points, edge_indices.t().contiguous(),descriptor, batch_ids, istrain=True)
         
         # compute loss for obj
         loss_obj = F.nll_loss(obj_pred, gt_cls)
@@ -147,9 +147,9 @@ class SGPN(BaseModel):
             ]
         return log
            
-    def process_val(self, obj_points, gt_cls, rel_points, gt_rel_cls, edge_indices, use_triplet=False):
+    def process_val(self, obj_points, gt_cls, descriptor, gt_rel_cls, edge_indices, use_triplet=True):
  
-        obj_pred, rel_pred = self(obj_points, rel_points)
+        obj_pred, rel_pred = self(obj_points, edge_indices, descriptor)
         
         # compute metric
         top_k_obj = evaluate_topk_object(obj_pred.detach().cpu(), gt_cls, topk=11)
