@@ -149,7 +149,7 @@ class SGPN(BaseModel):
            
     def process_val(self, obj_points, gt_cls, descriptor, gt_rel_cls, edge_indices, use_triplet=True):
  
-        obj_pred, rel_pred = self(obj_points, edge_indices, descriptor)
+        obj_pred, rel_pred = self(obj_points, edge_indices.t().contiguous(), descriptor)
         
         # compute metric
         top_k_obj = evaluate_topk_object(obj_pred.detach().cpu(), gt_cls, topk=11)
